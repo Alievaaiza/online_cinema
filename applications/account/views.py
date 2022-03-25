@@ -5,9 +5,11 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status
+from rest_framework import status, generics
 
-from applications.account.serializers import RegisterSerializer, LoginSerializer
+from applications.account.models import Profile
+from applications.account.permissions import IsProfileAuthor
+from applications.account.serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
 
 
 class RegisterView(APIView):
@@ -41,4 +43,19 @@ class LogoutView(APIView):
         Token.objects.filter(user=user).delete()
         return Response('Successfully logget out!', status=status.HTTP_200_OK)
 
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request):
+        user = request.user
+        profile = Profile.objects.get(user=user.id)
+        serializer = ProfileSerializer(profile, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProfileUpdateView(generics.UpdateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated, IsProfileAuthor, ]
 
